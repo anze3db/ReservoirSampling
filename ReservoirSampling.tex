@@ -43,19 +43,24 @@ sampling, reservoir, machine learning.
 
 
 \section{Introduction}
-\IEEEPARstart{T}{his} demo file is intended to serve as a ``starter file''
-for IEEE journal papers produced under \LaTeX\ using
-IEEEtran.cls version 1.7 and later. I wish you the best of success.
+\IEEEPARstart{T}{he} problem with random sampling is to select a random sample of size $n$ from a set of size $N$. Many algorithms have been developed for this problem when the value of $N$ is known beforehand. Some problems, that we encounter in the real world, do not have a specified $N$ or $N$ cannot be determined efficiently. Those kind of problems will be the focus of this paper. We shall take a look at older algorithms such as Algorith R which was developed to efficiently and accurately create a random sample from a tape in one pass, as well as newer algorithms, such as Open learning[TODO]\\
+
+Many reservoir algorithms make the assumption that the data does not change over time. Alogrithm R, for an example, samples starting data with a greater frequency than the data at the end of the tape[citation needed], which is efficient but it fails to react to emarging trends in the data. If we are interested in catching trends in our data a different kind of algorithm needs to be found. [TODO]\\\\
 
 %\hfill mds%?
  
 \hfill \today
+\section{Algorithm R and its improvements}
+\subsection{Motivation}
+In order to better understand the complex algorithms in use today we first need to understand the idea behind algorithms used in the past. In this section we shall describe Algorithm R and some of its improvement Algorithm Z.
 
-\subsection{Subsection Heading Here}
-Subsection text here.
+\subsection{Algorithm R}
+[TODO]
+\subsection{Algorithm Z}
+[TODO]
+\section{Online learning}
+[TODO]
 
-\subsubsection{Subsubsection Heading Here}
-Subsubsection text here.
 
 % Note that IEEE typically puts floats only at the top, even when this
 % results in a large percentage of a column being occupied by floats.
