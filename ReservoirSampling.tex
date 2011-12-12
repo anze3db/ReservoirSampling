@@ -61,7 +61,7 @@ In order to better understand the complex algorithms in use today we first need 
 \subsection{Algorithm R}
 Algoritm R is a reservoir algorithm written by Alan Waterman. It works as follows: we fill up our reservoir of $n$ records with the first $n$ records of the file we are processing. The $t + 1$st record then has a $n/(t + 1)$ chance of being in our reservoir of size $n$. The candidate it replaces is chosen randomly from the $n$ candidates.
 \\\\
-Below is an implementation of Algorithm R in $Python$:\\
+Below is t implementation of Algorithm R in $Python$:\\
 \begin{code}
 from random import randrange
 
@@ -81,7 +81,7 @@ Explanation:\\
 The list $N$ is our reservoir in which we store a random sample of records. We start of with an empty list of length $n$ in which we store the first $n$ elements (the for loop). The function $READ\_NEXT\_RECORD()$ returns the next record in the stream. After we have inserted the first $n$ elements into our reservoir, we enter the $while$ clause, which runs as long as there are still records in the stream. In each run of the $while$ clause we first increment the counter of records $t$ and then calculate a random number between $0$ and $t$. We store the random number in $M$. If $M$ is lower than $n$ we store the record at index $M$, otherwise we skip the record. [AM I EXPLAINING THE OBVIOUS?]
 \subsection{Algorithm Z}
 It turns out we do not need to go over every single record in order to get a random set of records in the reservoir. We can skip a random number of records each time just as long as the probability of a record being in the reservoir does not change. This is the idea behind Algorithm Z.\\ \\
-Implementation of Algorithm Z in $Python$:\\
+Below is the first part of Algorithm Z implementation in $Python$:\\
 \begin{code}
 from random import randrange
 
@@ -109,7 +109,7 @@ while EXISTS_NEXT_RECORD() and t <= thresh:
 		M = randrange(0, n)
 		N[M] = READ_NEXT_RECORD()
 \end{code}
-The algorithm works best if T = 22
+The algorithm works best if T = 22. When the $thresh$ value gets large enough the algorithm starts using the rejection technique.[TODO]  
 \section{Online learning}
 [TODO]
 
