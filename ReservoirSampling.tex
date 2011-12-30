@@ -1,4 +1,3 @@
-
 \documentclass[journal]{IEEEtran/IEEEtran}
 
 \usepackage[utf8x]{inputenc}
@@ -36,11 +35,11 @@
 \maketitle
 
 \begin{abstract}
-The abstract goes here.
+The abstract goes here.[TODO]
 \end{abstract}
 
 \begin{IEEEkeywords}
-sampling, reservoir, machine learning.
+[TODO]
 \end{IEEEkeywords}
 
 \IEEEpeerreviewmaketitle
@@ -80,8 +79,8 @@ while EXISTS_NEXT_RECORD():
 Explanation:\\
 The list $N$ is our reservoir in which we store a random sample of records. We start of with an empty list of length $n$ in which we store the first $n$ elements (the for loop). The function $READ\_NEXT\_RECORD()$ returns the next record in the stream. After we have inserted the first $n$ elements into our reservoir, we enter the $while$ clause, which runs as long as there are still records in the stream. In each run of the $while$ clause we first increment the counter of records $t$ and then calculate a random number between $0$ and $t$. We store the random number in $M$. If $M$ is lower than $n$ we store the record at index $M$, otherwise we skip the record. [AM I EXPLAINING THE OBVIOUS?]
 \subsection{Algorithm Z}
-It turns out we do not need to go over every single record in order to get a random set of records in the reservoir. We can skip a random number of records each time just as long as the probability of a record being in the reservoir does not change. This is the idea behind Algorithm Z.\\ \\
-Below is the first part of Algorithm Z implementation in $Python$:\\
+It turns out we do not need to go over every single record in order to get a random set in the reservoir. We can skip a random number of records each time just as long as the probability of a record being in the reservoir does not change. This is the idea behind Algorithm Z.\\ \\
+Below is the first part of Algorithm Z implemented in $Python$:\\
 \begin{code}
 from random import randrange
 
@@ -109,7 +108,7 @@ while EXISTS_NEXT_RECORD() and t <= thresh:
 		M = randrange(0, n)
 		N[M] = READ_NEXT_RECORD()
 \end{code}
-The algorithm works best if T = 22. When the $thresh$ value gets large enough the algorithm starts using the rejection technique.[TODO]  
+The algorithm works best if $T$ is between $10$ and $40$. When the $thresh$ value gets large enough the algorithm starts using the rejection technique. The rejection technique generates $S$ even more slowly than in the above algorithm, which makes the algorithm faster as there are even more records that we are able to skip. The main difference between $Algorithm\ R$ and $Algorithm\ Z$ is that the former  computes every single record while the latter skips as many records as possible.  
 \section{Online learning}
 [TODO]
 
