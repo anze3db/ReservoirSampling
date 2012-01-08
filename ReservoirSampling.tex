@@ -23,249 +23,278 @@
 \title{Reservoir Sampling}
 
 \author{Anže~Pečar, Miha~Zidar}%
-%\thanks{M. Shell is with the Department
-%of Electrical and Computer Engineering, Georgia Institute of Technology, Atlanta,
-%GA, 30332 USA e-mail: (see http://www.michaelshell.org/contact.html).}% <-this % stops a space
-%\thanks{J. Doe and J. Doe are with Anonymous University.}% <-this % stops a space
-%\thanks{Manuscript received April 19, 2005; revised January 11, 2007.}}
-
 \markboth{MLDM Workshop, January~2012}{}
 %\IEEEspecialpapernotice{(Invited Paper)}
-
 \maketitle
-
 \begin{abstract}
-In this article we are going to look at some of the techniques used for sampling continuous data. We will make an overview of the algorithms used in the past and present and present their shortcomings as well as their advantages. 
+In this article we are going to look at some of the techniques used for learning from continuous data. We will make an overview of the algorithms used in the past and present and present their shortcomings as well as their advantages. 
 \end{abstract}
 
 \begin{IEEEkeywords}
-online learning, continuous data, 
+online learning, continuous data, data mining, AUC maximization, frequent itemsets
 \end{IEEEkeywords}
 
 \IEEEpeerreviewmaketitle
 
 
 \section{Introduction}
-\IEEEPARstart{T}{he} problem with random sampling is to select a random sample of size $n$ from a set of size $N$. Many algorithms have been developed for this problem when the value of $N$ is known beforehand. Some problems, that we encounter in the real world, do not have a specified $N$ or $N$ cannot be determined efficiently. Those kind of problems will be the focus of this paper. We shall take a look at older algorithms such as Algorithm R which was developed to efficiently and accurately create a random sample from a tape in one pass, as well as newer algorithms, such as online learning and some of it's improvements.\\
+\IEEEPARstart{W}{e} live in a very exciting time where processing large amounts of data is of utmost importance. Even with an almost unlimited storage capacities we are still in dire need of efficient algorithms that find only the relevant bits of information from a never ending data stream.\\
 
-Many reservoir algorithms make the assumption that the data does not change over time. Algorithm R, for an example, samples starting data with a greater frequency than the data at the end of the tape, which is efficient but it fails to react to emerging trends in the data. If we are interested in trends  a different kind of algorithm needs to be used. For this reason we shall describe a basic online learning algorithm and some improvements for it.\\\\
+The subject of this paper will not only be to study different kinds of reservoir algorithms but to tackle the broader subject of learning from continuous data in general. Continuous data can be interpreted as any kind of data of which we do not know its size, which is to say that we do not know when the data stream will end. In the past applications of algorithms dealing with continuous data were for an example reading from a tape drive. Memory limitations made it difficult to copy all the data on a tape into working memory, which made it very difficult to do useful operations upon that data. Today working memory is no longer as limited as it was in the past, but that does not mean that there is no more need for such algorithms. It is in fact, quite the contrary. With the boom of the Internet there is more data out there in wild, than it has ever been before. Large websites are facing bigger and bigger problems with dealing with all of the information that they get from their visitors on a daily or even hourly basis. They have to use online machine learning techniques as processing their whole database would take a vast amount of time and resources. These algorithms will be the main subject of this article.\\
 
+We shall begin with studying reservoir sampling techniques, which enable us to create a random sample of a continuous stream of data. We will take a closer look at one such algorithm named Algorithm R, as well as one of it's many improvements Algorithm Z. Later we will take a look at how Algorithm R can be used in combination with an online learning algorithm to efficiently process incoming data. As well as touching on reservoir sampling algorithms we shall touch upon online learning algorithms. We will describe the idea and implementation of the basic online learning algorithm which uses gradient descent in its implementation. We will also describe a much more complicated algorithm named Online AUC Maximization, which tries to maximize the area under the ROC curve and use this measure to predict more accurately. This very same algorithm utilizes a reservoir sampling algorithm in its implementation.\\
+
+We will finish off this article with a concrete data mining problem. We will describe the issue of frequent itemsets, which is a common problem for many large supermarkets and online stores. We will describe sequential algorithms for solving this problem as well as their parallel improvements. We shall learn that the reservoir sampling algorithms can be used to make parallel algorithms more efficient.
 %\hfill mds%?
- 
 \hfill \today
 \section{Algorithm R and its improvements}
 \subsection{Motivation}
-In order to better understand the complex algorithms in use today we first need to understand the idea behind simpler algorithms used in the past. In this section we shall describe Algorithm R and its improvement - Algorithm Z.
+The problem with random sampling is to select a random sample of size $n$ from a set of size $N$. Many algorithms have been developed for this problem when the value of $N$ is known beforehand. Some problems, that we encounter in the real world, do not have a specified $N$ or $N$ cannot be determined efficiently. Those kind of problems will be the focus of this paper. In this section we shall take a look at Algorithm R, which was developed to efficiently and accurately create a random sample from a tape in one pass. But we will not stop at the basic implementation of Algorithm R as we will try to explain the idea behind its improvement Algorithm Z.\\
 
+Many reservoir algorithms make the assumption that the data does not change over time. Such is the case with Algorithm R, which samples starting data with a greater frequency than the data at the end of the tape. This is efficient, but it fails to react to emerging trends in the data. Later in the article we will learn how to use Algorithm R within an online learning algorithm, which can use the benefits of Algorithm R and still react to recent changes in trends. 
 \subsection{Algorithm R}
-Algorithm R is a reservoir algorithm written by Alan Waterman. The basic idea behind reservoir algorithms is to select a sample of size $\ge n$, from which a random sample of size $n$ can be generated. The purpose of Algorithm R is generating a random sample small enough to fit into working memory, from a continuous data stream such as a tape. The algorithm works as follows: we fill up our reservoir of $n$ records with the first $n$ records of the file we are processing. The $t + 1$st record then has a $n/(t + 1)$ chance of being in our reservoir of size $n$. The candidate it replaces is chosen randomly from the $n$ candidates.
-\\\\
+Algorithm R is a reservoir algorithm written by Alan Waterman\cite{reservoir85}. The basic idea behind reservoir algorithms is to select a sample of size $\ge n$, from which a random sample of size $n$ can be generated. The purpose of Algorithm R is generating a random sample small enough to fit into working memory, from a continuous data stream such as a tape. The algorithm works as follows: we fill up our reservoir of $n$ records with the first $n$ records of the file we are processing. The $t + 1$st record then has a $n/(t + 1)$ chance of being in our reservoir of size $n$. The candidate it replaces is chosen randomly from the $n$ candidates.
+\\
+
 Below is the implementation of Algorithm R in $pseudo code$:\\
 \begin{code}
 N = [0] * n # initial reservoir
-for i in xrange(n):
-	N[i] = READ_NEXT_RECORD()
+for i in range(n):
+  N[i] = READ_NEXT_RECORD()
 t = n
 while EXISTS_NEXT_RECORD():
-	t += 1
-	M = randrange(0, t, 1)
-	if M < n:
-		N[M] = READ_NEXT_RECORD()
-	else:
-		READ_NEXT_RECORD()	
+  t += 1
+  M = randrange(0, t, 1)
+  if M < n:
+    N[M] = READ_NEXT_RECORD()
+  else:
+    READ_NEXT_RECORD()	
 
 \end{code}
-Explanation:\\
-The list $N$ is our reservoir in which we store a random sample of records. We start of with an empty list of length $n$ in which we store the first $n$ elements (the for loop). The function $READ\_NEXT\_RECORD()$ returns the next record in the stream. After we have inserted the first $n$ elements into our reservoir, we enter the $while$ clause, which runs as long as there are still records in the stream. In each run of the $while$ clause we first increment the counter of records $t$ and then calculate a random number between $0$ and $t$. We store the random number in $M$. If $M$ is lower than $n$ we store the record at index $M$, otherwise we skip the record. [AM I EXPLAINING THE OBVIOUS?]
+\subsubsection*{Explanation}
+The list $N$ is our reservoir in which we store a random sample of records. We start of with an empty list of length $n$ in which we store the first $n$ elements (the for loop). The function $READ\_NEXT\_RECORD()$ returns the next record in the stream. After we have inserted the first $n$ elements into our reservoir, we enter the $while$ clause, which runs as long as there are still records in the stream. In each run of the $while$ clause we first increment the counter of records $t$ and then calculate a random number between $0$ and $t$. We store the random number in $M$. If $M$ is lower than $n$ we store the record at index $M$, otherwise we skip the record. The Algorithm R is easy to understand and we can intuitively see how the algorithm creates a random sample from our continuous data stream.\\
+
+There is, however, much room for improvements. A basic improvement mentioned in \cite{reservoir85} is Algorithm X. Algorithm X is similar to Algorithm R, but it skips a random number of records instead calculating the probability for each record. Algorithm X can further be improved by using an even more aggressive technique of skipping list items. The improvement is named Algorithm Z and will be described below.
 \subsection{Algorithm Z}
-It turns out we do not need to go over every single record in order to get a random set in the reservoir. We can skip a random number of records each time just as long as the probability of a record being in the reservoir does not change. This is the idea behind Algorithm Z.\\ \\
+It turns out we do not need to go over every single record in order to get a random set in the reservoir. We can skip a random number of records each time just as long as the probability of a record being in the reservoir does not change. This is the idea behind Algorithm Z.\\
+
 Below is the first part of Algorithm Z implemented in $pseudocode$:\\
 \begin{code}
 N = [0] * n # initial reservoir
-for i in xrange(n):
-	N[i] = READ_NEXT_RECORD()
+for i in range(n):
+  N[i] = READ_NEXT_RECORD()
 t = n
 thresh = T * n
 num = 0
 while EXISTS_NEXT_RECORD() and t <= thresh:
-	t += 1
-	num += 1
-	V = random()
-	S = 0
-	quot = num/t
-	while quot > V:
-		S += 1
-		t += 1
-		num += 1
-		quot = (quot * num)/t
+  t += 1
+  num += 1
+  V = random()
+  S = 0
+  quot = num/t
+  while quot > V:
+    S += 1
+    t += 1
+    num += 1
+    quot = (quot * num)/t
 	
-	SKIP_RECORDS(S)
+    SKIP_RECORDS(S)
 	
-	if EXISTS_NEXT_RECORD():
-		M = randrange(0, n)
-		N[M] = READ_NEXT_RECORD()
+    if EXISTS_NEXT_RECORD():
+      M = randrange(0, n)
+      N[M] = READ_NEXT_RECORD()
 		
 \end{code}
-Similarly to Algorithm R, Algorithm Z starts of by putting the first $n$ elements into the reservoir. It then proceeds into the while loop, which runs until the variable $t$ is below the threshold variable $thresh$. The second while loop is used to calculate the number of skipped elements $S$. The value of $S$ will be larger after each iteration of the first while loop, making the algorithm skip more and more elements each time.\\\\ 
-The above algorithm works best when it's $thresh$ value $T$ is between $10$ and $40$. After the $t$ value reaches the $thres$ value the second part of the algorithm begins. The implementation of the second part of the algorithm, known as the rejection technique, is complicated, and we shall only describe the basic idea behind it. The reader can get the full algorithm in \cite{reservoir85}.\\\\
-The rejection technique generates $S$ even more slowly than in the first part of $Algorithm\ Z$, which makes the algorithm faster as there are even more records that we are able to skip.[TODO][WHY DO WE NEED IT?]
-\subsection{Conclusion[?]}
-As we can now see, the main difference between $Algorithm\ R$ and $Algorithm\ Z$ is that the former is slower as it computes the probability for every single record while the latter is much faster as it skips as many records as possible. Both algorithms give us a random sample, however, none of them is ideal for detecting emerging trends in the data. In the next chapter we shall focus on algorithms that do just that.
+Similarly to Algorithm R, Algorithm Z starts of by putting the first $n$ elements into the reservoir. It then proceeds into the while loop, which runs until the variable $t$ is below the threshold variable $thresh$. The second while loop is used to calculate the number of skipped elements $S$. The value of $S$ will be larger after each iteration of the first while loop, making the algorithm skip more and more elements each time.\\
+
+The above algorithm works best when its $thresh$ value $T$ is between $10$ and $40$. After the $t$ value reaches the $thres$ value the second part of the algorithm begins. The implementation of the second part of the algorithm, known as the $rejection\ technique$, is complicated, and we shall only describe the basic idea behind it. The reader can read the full algorithm in \cite{reservoir85}.\\
+
+Rejection technique is a pseudo-random number sampling technique used to generate observations from a distribution. It generates sampling values from an arbitrary probability distribution function $f(x)$ by using an instrumental distribution $g(x)$, under the only restriction that $$f(x) < Mg(X),$$where $M > 1$ is an appropriate bound on $$\frac{f(x)}{g(x)}.$$
+The bottom line is that the rejection technique generates values $S$ that increment faster than in the first part of $Algorithm\ Z$, which enables the algorithm to skip even more records without the risk of affecting the distribution of elements in the reservoir.
+\subsection{Conclusion}
+As we can now see, the main difference between $Algorithm\ R$ and $Algorithm\ Z$ is that the former is slower as it computes the probability for every single record, while the latter is faster as it skips as many records as possible. Both algorithms give us a random sample, however, none of them is ideal for detecting emerging trends in the data on its own. As we have seen in both algorithms, the values from the beginning of the data stream get inserted directly into the reservoir, while the records inserted after the reservoir is full need to pass a probability check to get inserted. In the next chapter we shall focus on algorithms that are used for detecting trends in continuous data and we will see that the reservoir algorithm can be used to improve their performance.
 \section{Online learning}
 \subsection{Introduction}
-Online learning algorithms are used when we want our model to learn one instance at the time.  
+As we have mentioned in the chapters above, sometimes we do not need to process the whole data set but only the most recent and/or relevant bits. This is what online learning algorithms have been made for. A definition of online learning algorithms as it is written in \cite{learning}:\\
 
+In this learning setting the learner receives a sequence of examples, making predictions after each one, and receiving feedback after each one.\\ 
 
+Because of this, online machine learning algorithms allow us to process continuous streams of data. Today many websites use different kinds of online learning algorithms in order to learn from their users preferences. These websites use the continuous flood of data, provided by the users, in order to better present their content and improve their click through rate or other aspects of their websites. 
+\subsection{A use case example of an online learning algorithm}
+Lets suppose we run a website that provides a paying service for its users. Sometimes users choose to use the service, but some times they do not. We could use an online learning algorithm in order to fine tune our service (asking price, response time, ...), maximizing the probability of users wanting to use our service. We take a look at one example (user) at a time and try to learn from it. It is also crucial that our algorithm adopts to changing user preferences. An example of this would be changes in the economy which would make our users less likely to pay a larger price for our service. Our online learning algorithm needs to detect these kind of trends in order for us to respond to them. 
+\subsection{A basic online learning algorithm}
+The implementation of a basic online learning algorithm would be as follows:
+\begin{code}
+while (True):
+  (x,y) = GET_USER_DATA()
+  for(i = 0; i < n; i++):
+    Theta[i] = Theta[i] - Alpha*(h(x) - y)*x(j) 
+\end{code} 
 
-% Note that IEEE typically puts floats only at the top, even when this
-% results in a large percentage of a column being occupied by floats.
-%\begin{figure}[!t]
-%\centering
-%\includegraphics[width=2.5in]{myfigure}
-% where an .eps filename suffix will be assumed under latex, 
-% and a .pdf suffix will be assumed for pdflatex; or what has been declared
-% via \DeclareGraphicsExtensions.
-%\caption{Simulation Results}
-%\label{fig_sim}
-%\end{figure}
+We will explain exactly what Theta ($\Theta$) is in a latter chapter. For now the important bit of the algorithm is that it is being run continuously and that it adopts to the changes being made in real time. The $x$ variable contains the information that we receive about the visitor, while the $y$ variable contains the information whether or not the visitor chose to use our paying service.
+\subsection{Logistic regression}
+Logistic regression is one of the most popular and most widely used learning algorithms today. Despite its name it is a classification algorithm. It can be used with great success in online learning algorithms so it is worth taking a closer look. Usually we want our hypothesis representation to be between  
+$$ 0 \le h_\Theta (x) \le 1. $$ 
+Linear regression, as an example, does bind our hypothesis by such boundaries. To achieve this we shall use the $Logistic\ function$, which gives our algorithm its name. Our hypothesis is defined as
+$$ h_\Theta (x) = g(\Theta^{T}x)$$
+Where $g$ is Sigmoid/Logistic function
+$$ g(z) = \frac{1}{1+e^{-z}} $$
+Our hypothesis is therefore
+$$ h_\Theta (x) = \frac{1}{1+e^{-\Theta^{T}x}} $$
+\subsubsection*{Fitting parameters}
+We have a training set of $m$ examples. How do we choose the parameters $\Theta$?
+The basic arithmetic distance cost function defined as
+$$ Cost(h_\Theta (x), y) = \frac{1}{2}(h_\Theta (X) - y)^{2} $$
+Can not be used as the function would not be convex, which would make it difficult for us to create a minimizing algorithm that would work well. For this reason we shall use the following cost function
+\begin{equation*}
+Cost(h_\Theta (x), y) =
+\begin{cases}
+-\log{(h_\Theta (x))} \text{ if $y=1$,}
+\\
+-\log{(1 - h_\Theta (x))} \text{ if $y=0$.}
+\end{cases}
+\end{equation*}
+We can write the logistic cost function as follows
+$$ J(\Theta) = -\frac{1}{m}\displaystyle\sum\limits_{i=1}^m 
+-y^{(i)}\log{(h_\Theta (x^{(i)}))} + (1-y^{(i)}) -\log{(h_\Theta (x^{(i)}))} $$
 
-% An example of a double column floating figure using two subfigures.
-% (The subfig.sty package must be loaded for this to work.)
-% The subfigure \label commands are set within each subfloat command, the
-% \label for the overall figure must come after \caption.
-% \hfil must be used as a separator to get equal spacing.
-% The subfigure.sty package works much the same way, except \subfigure is
-% used instead of \subfloat.
-%
-%\begin{figure*}[!t]
-%\centerline{\subfloat[Case I]\includegraphics[width=2.5in]{subfigcase1}%
-%\label{fig_first_case}}
-%\hfil
-%\subfloat[Case II]{\includegraphics[width=2.5in]{subfigcase2}%
-%\label{fig_second_case}}}
-%\caption{Simulation results}
-%\label{fig_sim}
-%\end{figure*}
-%
-% Note that often IEEE papers with subfigures do not employ subfigure
-% captions (using the optional argument to \subfloat), but instead will
-% reference/describe all of them (a), (b), etc., within the main caption.
+To fit the parameters we need to minimize the cost function:
+$$\displaystyle\min_\Theta J(\Theta)$$
+And we can minimize it with the $Gradient\ Descent$ algorithm:
+\begin{code}
+theta_old = 0
+theta_new = 6 # The algorithm starts at x=6
+alpha = 0.01 # step size
+precision = 0.00001
 
+while abs(theta_new - theta_old) > precision:
+  theta_old = theta_new
+  theta_new = theta_old - alpha * J(theta_new)
+\end{code}
 
-% An example of a floating table. Note that, for IEEE style tables, the 
-% \caption command should come BEFORE the table. Table text will default to
-% \footnotesize as IEEE normally uses this smaller font for tables.
-% The \label must come after \caption as always.
-%
-%\begin{table}[!t]
-%% increase table row spacing, adjust to taste
-%\renewcommand{\arraystretch}{1.3}
-% if using array.sty, it might be a good idea to tweak the value of
-% \extrarowheight as needed to properly center the text within the cells
-%\caption{An Example of a Table}
-%\label{table_example}
-%\centering
-%% Some packages, such as MDW tools, offer better commands for making tables
-%% than the plain LaTeX2e tabular which is used here.
-%\begin{tabular}{|c||c|}
-%\hline
-%One & Two\\
-%\hline
-%Three & Four\\
-%\hline
-%\end{tabular}
-%\end{table}
+This is how we can use a basic online learning algorithm to predict whether a user will want to join our paying service. We can now modify some of hte parameters $x$ and see if the outcome $y$ will change and adjust our website accordingly.
+\section{Online AUC Maximization}
+The problem with the basic online learning algorithm implementation is that it presumes, that the data is evenly distributed among different classes. These online algorithms are measured by their classification accuracy. But this is inappropriate if the data is unevenly distributed. One of the ways we can address this issue, is by developing an online learning algorithm for maximizing Area Under the ROC curve (AUC), which is a technique frequently used for measuring classification performance for imbalanced data sets. In the classical setup of an online algorithm overall loss is the sum of losses over individual training examples. However, in AUX Maximization, we optimize the pairwise loss between two instances from different classes. 
+\subsection{Receiver Operating Characteristics (ROC)}
+A receiver operating characteristic (ROC) or simply a ROC curve is a graphical plot of the sensitivity. This is the true positive rate, vs. false positive rate, for a binary classifier system as its discrimination threshold is varied. The ROC can also be represented equivalently by plotting the fraction of true positives out of the positives vs. the fraction of false positives out of the negatives. 
+\subsection{AUC Algorithms}
+Directly applying classical online learning algorithms to maximize AUC requires memorizing all the received training examples, which is of course, inconvenient. One way to overcome this problem is using a reservoir sampling technique which we described in the beginning of this article. 
+A framework for Online AUC Maximization algorithm
+\begin{code}
+w(1) = 0
+Bp(1) = 0, Bn(1) = 0
+Np(1) = 0, Nn(1) = 0
+for t = range(1,T):
+  RECEIVE_TRAINING_INSTANCE(x(t), y(t)
+  if y(t) = +1[???]
+    Np(t+1) = Np(t)+1
+    Nn(t+1) = Nn(t)
+    Bn(t+1) = Bn(t)
+    C(t) = C*max(1,Nn(t)/Nn)
+    Bp(t+1) = 
+      UpdateBuffer(Bp(t), x(t), Np, Np(t+1)
+    w(t+1)  = 
+      UpdateClassifier(w(t),x(t),y(t),
+                       C(t),Bn(t+1))
+  else
+    Nn(t+1) = Nn(t)+1
+    Np(t+1) = Np(t)
+    Bp(t+1) = Bp(t)
+    C(t) = C*max(1,Np(t)/Np)
+    Bn(t+1) = 
+      UpdateBuffer(Bn(t), x(t), Nn, Nn(t+1)
+    w(t+1)  = 
+      UpdateClassifier(w(t),x(t),y(t),
+                       C(t),Bp(t+1))
+\end{code}
+\subsubsection*{UpdateBuffer}
+$UpdateBuffer$ is a function that implements the Algorithm R reservoir sampling algorithm. If we needed the function to be as fast as possible, we would of course implement Algorithm Z. As we have described the Algorithm R in depth in the previous chapters we shall not provide a full implementation of the UpdateBuffer function.
 
+\subsubsection*{UpdateClassifier} 
+This routine takes five input arguments: the current classifier $w[t]$, training example $(x[t], y[t])$, buffer $B$ and a weight $C[t]$ which play a similar role as step size in our basic online learning algorithm implementation. $Gradient\ updating$ is one technique that could be used to implement the UpdateClassifier function. This approach is to treat $Lt(w)$ as a single loss function and apply the $gradient\ descent$ algorithm that we have also described in the previous chapters.\\
+Gradient updating
+\begin{code}
+def UpdateClassifier(w[t], x[t], y[t], C[t]
+  for x in B:
+    if y[t]*w[t]*(x[t]-x) <= 1:
+      w[t+1] = w[t+1]+C[t]*y[t]*(x[t]-x)/2
+  return w[t+1]
+\end{code}
+\subsection{AUC Summary}
+Online AUC Maximization aims to online learn a model by maximizing the AUC metric. It is more challenging than conventional online learning tasks where the goal is often to minimize the mistake rate of online predictions. The key challenge, as we have seen, is that it requires to memorize all the received training instances in the online learning process. It addresses this challenge by applying the reservoir sampling technique, which is able to maintain a good representative sample of the whole dataset.
+
+\section{Frequent itemsets}
+In the last part of our article we will take a look at a concrete data mining problem that we can efficiently solve with the help of reservoir sampling algorithms.\\
+
+Thanks to automated data collection, companies are able to collect huge amounts of data. It is impossible for them to manually analyse this vast amount of data. Therefore, automatic methods need to be developed. One such challenge is market basket analysis.\\
+
+The term market basket analysis comes from the need to analyse baskets of items from supermarket customers in order to improve shelf organization and many other aspects of the supermarket. Frequent itemsets are all sets of items that occur in transactions at least $min\_support$ amount of time. The $min\_support$ is a parameter of computation. An example of a frequent itemset could be the set $U$ in which $$U = \{bread, milk, honey\}$$ If we say that $Supp(U) = 0.3$ it means that the itemset $U$ occurs in 30\% of transactions. 
+\subsection{Sequential algorithms}
+There are many different algorithms for mining frequent itemsets, namely the Apriori algorithm, the Eclat algorithm, and the FP-Growth algorithm. We shall briefly describe the FPGrowth algorithm.
+\subsubsection*{FPGrowth algorithm} is a depth first search algorithm which creates a frequent pattern tree that represent the whole database. This algorithm needs only two scans of the database, first to compute frequent items and second to create a frequent pattern tree. A frequent pattern tree is basically a tree with a tuple $(item, support, up\_link, link, children)$ in each node. \\
+
+The $support$ field is the support of the prefix of the item field. The $up\_link$ field is the link to the node at the previous level. The $link$ field forms a tree of nodes with a particular item. We have described the basic structure of the FPGrowth algorithm but we will not go into implementation details. Readers who are interested in it should read \cite{kessl}.
+\subsection{Parallel algorithms}
+There are many parallel algorithms based on the Apriori, the FPGrowth and the Eclat algorithm, but all of the implementations have some problems. The FPGrowth algorithm, that we briefly described above, suffers from overly simplified estimate of the prefix-based classes which do not capture the real amount assigned to the processors.
+\subsection{Parallel-FIMI}
+Parallel-FIMI (Parallel Frequent Itemset MIning) is a new method of mining frequent itemsets proposed by R. Kessl\cite{kessl}. It has three variants:
+\begin{itemize}
+\item Parallel-FIMI-SEQ
+\item Parallel-FIMI-PAR
+\item Parallel-FIMI-RESERVOIR
+\end{itemize}
+
+Parallel-FIMI method has the following advantages over other parallel algorithms that we have briefly mentioned:
+\begin{enumerate}
+\item The method is universal. We can easily parallelise any depth first search algorithm. It is even possible to parallelise breadth first search algorithms.
+\item The computation is balanced statically. The static load-balancing is based on a heuristic and a sampling algorithm for estimating the size of the PBECs (prefix-based equivalence classes). The PBECs are then assigned to the processors, so that all the processors perform approximately the same amount of work.
+\end{enumerate}
+
+Results are distributed among the processors. This can be an advantage if we need to query particular frequent itemsets. Each processor gets the query and finds the frequent itemsets in its own subset and sends them back to the querying processor.\\
+
+The basic idea behind Parallel-FIMI is to partition all frequent itemsets into disjoint sets, using PBECs of relative sizes. Each processor then processes one partition.\\
+\subsubsection*{Sampling based on the reservoir algorithm}
+We will now describe sampling based on the reservoir algorithm. The reservoir sampling algorithm is used in phase 1 of the Parallel-FIMI-RESERVOIR algorithm. The goal of phase 1 is to create an identically distributed sample of $F$ which is essentially a stream of frequent itemsets. We do not know the size of $F$ in advance. We take the samples $F_s$ using the reservoir sampling algorithm that we described in the beginning of this article. This solves our problem of making a uniform sample $F_s \subseteq F$. The sampling is done using an array of frequent itemestes (a buffer or a reservoir) that holds $F_s$.\\
+
+Instead of $READ\_NEXT\_RECORD$ and $SKIP\_RECORDS$ functions that we described in the first chapter, when we described Algorithm R, we now have functions $READ\_NEXT\_FI$ and $SKIP\_FIS$ for reading and skipping frequent itemsets. This is the only difference between the algorithm used by \cite{kessl} and the algorithm that we have described above.\\
+
+We shall not go into details about phases 2, 3 and 4 as there is an overwhelming amount of mathematics needed to explain them in full detail. Our goal was only to show how a reservoir sampling algorithm can be used in a parallel data mining algorithm.
 \section{Conclusion}
-The conclusion goes here.
+As we have seen there are many different ways of tackling continuous data. From simple online learning algorithms, that take only a few lines of code to implement, to mind bobbling algorithms that are fast and as accurate as possible. We have shown how a simple reservoir sampling algorithm can be useful for a variety of tasks. We have seen it perform well for sampling data form a continuous tape. We have also shown an example of an advanced online learning algorithm that uses it for calculating the area under the ROC curve. Lastly, we have given an concrete example of its usage in data mining task - mining frequent itemsets with a parallel algorithm.\\
 
-
-% if have a single appendix:
-%\appendix[Proof of the Zonklar Equations]
-% or
-%\appendix  % for no appendix heading
-% do not use \section anymore after \appendix, only \section*
-% is possibly needed
-
+There are countless more applications of reservoir sampling and we do not doubt that we will see it used in many more algorithms yet to be invented. There is, however, still plenty of room for improvements. There are still ways to improve the reservoir sampling algorithm itself as well as improving the performance of algorithms that use it in their implementation. The subject is as relevant as ever and we do not doubt that many more algorithms will be invented and a lot more papers shall be written on the subject. 
 \appendices
-\section{Appendix title}
-Appendix one text goes here.
 
-\section{}
-Appendix two text goes here.
+\section*{Acknowledgement}
+The authors would like to thank Matjaž Kukar, PhD Assistant Professor.
 
 
-\section*{Acknowledgment}
-
-
-The authors would like to thank...
-
-% trigger a \newpage just before the given reference
-% number - used to balance the columns on the last page
-% adjust value as needed - may need to be readjusted if
-% the document is modified later
-%\IEEEtriggeratref{8}
-% The "triggered" command can be changed if desired:
-%\IEEEtriggercmd{\enlargethispage{-5in}}
-
-% references section
-
-% can use a bibliography generated by BibTeX as a .bbl file
-% BibTeX documentation can be easily obtained at:
-% http://www.ctan.org/tex-archive/biblio/bibtex/contrib/doc/
-% The IEEEtran BibTeX style support page is at:
-% http://www.michaelshell.org/tex/ieeetran/bibtex/
-%\bibliographystyle{IEEEtran}
-% argument is your BibTeX string definitions and bibliography database(s)
-%\bibliography{IEEEabrv,../bib/paper}
-%
-% <OR> manually copy in the resultant .bbl file
-% set second argument of \begin to the number of references
-% (used to reserve space for the reference number labels box)
 \begin{thebibliography}{1}
 \bibitem{reservoir85}
 J.~S. Vitter, \emph{Random Sampling with a Reservoir}. \relax Brown University, 1985.
 \bibitem{learning}
 N. Littlestone, \emph{Learning Quickly When Irrelevant Attributes
 Abound: A New Linear-threshold Algorithm}. \relax University of California, 1988
-\bibitem{IEEEhowto:kopka}
-H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
-  0.5em minus 0.4em\relax Harlow, England: Addison-Wesley, 1999.
+\bibitem{auc}
+P. Zhao, R. Jing, \emph{Online AUC Maximization} \relax School of Computer Engineering, Nanyang Technological Unoversoty \& Deparment of Computer Science and Engineering, Michigan State University
+\bibitem{kessl}
+R. Kessl, \emph{Parallel algorithms for mining of frequent itemsets} \relax The Faculty of Electrical Engineering, Czech Technical University in Prague
+\bibitem{roc}Hanley, James A. and McNeil, Barbara J. \emph{The meaning and
+use of the area under of receiver operating characteristic
+(roc) curve.} \relax 1982.
 
 \end{thebibliography}
 
-% biography section
-% 
-% If you have an EPS/PDF photo (graphicx package needed) extra braces are
-% needed around the contents of the optional argument to biography to prevent
-% the LaTeX parser from getting confused when it sees the complicated
-% \includegraphics command within an optional argument. (You could create
-% your own custom macro containing the \includegraphics command to make things
-% simpler here.)
-%\begin{biography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{mshell}}]{Michael Shell}
-% or if you just want to reserve a space for a photo:
 \newpage
 
 \begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{anze}}]{Anže Pečar}
-Biography text here.
+63060257
 \end{IEEEbiography}
 
 % if you will not have a photo at all:
 \begin{IEEEbiography}{Miha Zidar}
-Biography text here.
+63060317
 \end{IEEEbiography}
-
-% You can push biographies down or up by placing
-% a \vfill before or after them. The appropriate
-% use of \vfill depends on what kind of text is
-% on the last page and whether or not the columns
-% are being equalized.
-
-%\vfill
-
-% Can be used to pull up biographies so that the bottom of the last one
-% is flush with the other column.
-%\enlargethispage{-5in}
 
 \end{document}
 
