@@ -1,0 +1,66 @@
+Reservoir Sampling
+	Anže Pečar, Miha Zidar
+
+keywords
+	online learning 
+	continuous data
+	data mining
+	AUC maximization
+	frequent itemsets
+
+Algorithm R and its improvements
+	
+	Algorithm R
+		for simmilar data over time
+		Simple implementation
+		Lots of room for improvement
+	
+	Algorithm Z
+		Simmilar to Algorithm R
+		Improved perfomance
+		Rejection technique
+		Does not detect trends
+
+Online learning
+	Focus on recent data
+	Constant feedback
+	Good for endless streams
+	
+	Logistic regression
+		Popular and widely used
+		Classification algorithm
+		Give a forecast of costs
+		Fitting parameters
+
+	Online AUC maximization
+		AUC - Area Under ROC Curve
+		Optimize pairwise loss
+		AUC algorithms
+			Use of Algorithms R and Z for sampling
+			Needs more memorry
+		
+Frequent itemsets
+	Automated data collection
+	Vast amounts of data
+
+	Sequential algorithms
+		Apriori
+		Eclat
+		FP-Growth
+			Depth first search
+			Frequent pattern tree
+			Simple estimates
+
+	Parallel algorithms
+		Many are based on the sequntial algorithms
+		Parallel-FIMI (Parallel Frequent Itemset MIning)
+			Universal method
+			Easy to parallelize
+			Easy load balancing
+
+			Parallel-FIMI-SEQ
+			Parallel-FIMI-PAR
+			Parallel-FIMI-RESERVOIR
+
+
+
