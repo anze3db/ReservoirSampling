@@ -6,6 +6,7 @@
 \usepackage{url}
 \usepackage{verbatim}
 \usepackage{epstopdf}
+\usepackage{amssymb}
 \usepackage[pdftex]{graphicx}
 \graphicspath{{img/}}
 \DeclareGraphicsExtensions{.eps,.pdf,.png,.jpg,.jpeg}
@@ -178,15 +179,22 @@ The problem with the basic online learning algorithm implementation is that it p
 \subsection{Receiver Operating Characteristics (ROC)}
 A receiver operating characteristic (ROC) or simply a ROC curve is a graphical plot of the sensitivity. This is the true positive rate, vs. false positive rate, for a binary classifier system as its discrimination threshold is varied. The ROC can also be represented equivalently by plotting the fraction of true positives out of the positives vs. the fraction of false positives out of the negatives. 
 \subsection{AUC Algorithms}
-Directly applying classical online learning algorithms to maximize AUC requires memorizing all the received training examples, which is of course, inconvenient. One way to overcome this problem is using a reservoir sampling technique which we described in the beginning of this article. 
-A framework for Online AUC Maximization algorithm
+Directly applying classical online learning algorithms to maximize AUC requires memorizing all the received training examples, which is of course, inconvenient. One way to overcome this problem is using a reservoir sampling technique which we described in the beginning of this article. \\
+
+Online AUC Maximization algorithm focuses on learning a linear classification problem with imbalanced data distributions for the two classes. In the following example we will assume the positive class to be the rare class. $x(t)$, $y(t)$ are the training examples received at the $t$-th trial, where $x(t) \in  \mathbb{R}^d $ and $y \in \{+1, +0\}$. $w(t)$ is the weight vector learned so far. We divide our data set $D$ into two sets, the set of positive instances $D_+$ and the set of negative instances $D_-$.\\
+
+We can use the gradient descent based online learning algorithm and update the weight vector $w$ as follows:
+\[ w(t+1) = w(t) - C\Delta L_t(w) \]
+where $C$ is the step size parameter. The main problem is that in order to compute the complete gradient $\Delta L_t(w)$ we need to store all the receiving training examples. We address this problem by caching a small number of received training examples. We introduce two buffers $Bp$ for positive instances and $Bn$ for negative instances of sizes $Np$ and $Nn$ respectively. \\
+
+A framework for Online AUC Maximization approach
 \begin{code}
 w(1) = 0
 Bp(1) = 0, Bn(1) = 0
 Np(1) = 0, Nn(1) = 0
 for t = range(1,T):
   RECEIVE_TRAINING_INSTANCE(x(t), y(t)
-  if y(t) = +1[???]
+  if y(t) = +1
     Np(t+1) = Np(t)+1
     Nn(t+1) = Nn(t)
     Bn(t+1) = Bn(t)
@@ -208,7 +216,7 @@ for t = range(1,T):
                        C(t),Bp(t+1))
 \end{code}
 \subsubsection*{UpdateBuffer}
-$UpdateBuffer$ is a function that implements the Algorithm R reservoir sampling algorithm. If we needed the function to be as fast as possible, we would of course implement Algorithm Z. As we have described the Algorithm R in depth in the previous chapters we shall not provide a full implementation of the UpdateBuffer function.
+$UpdateBuffer$ function needs to keep an accurate "sketch" of history under the constraint of fixed buffer size. To achieve this we deploy our reservoir sampling algorithm Algorithm R. Specifically, given a received training example $(x(t), y(t))$, we add it to the buffer $By(t)$ if $| By(t) | < Ny$. When the buffer is full, we add new items to the buffer as we have described in our Algorithm R section. If we needed the function to be as fast as possible, we would of course implement Algorithm Z. As we have seen in the previous section, Algorithm Z differs from Algorithm R as it skips items instead of calculating the probability for each one. Even though more items get skipped in Algorithm Z we end up having a random sample of the stream in the buffer.
 
 \subsubsection*{UpdateClassifier} 
 This routine takes five input arguments: the current classifier $w[t]$, training example $(x[t], y[t])$, buffer $B$ and a weight $C[t]$ which play a similar role as step size in our basic online learning algorithm implementation. $Gradient\ updating$ is one technique that could be used to implement the UpdateClassifier function. This approach is to treat $Lt(w)$ as a single loss function and apply the $gradient\ descent$ algorithm that we have also described in the previous chapters.\\
